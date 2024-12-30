@@ -6,6 +6,7 @@ import sqlite3
 import requests
 from flask import Flask, request, jsonify
 import numpy as np
+from contractions import expand_contractions
 
 from ML.helperML import get_features, get_classes, loadLite
 
@@ -15,6 +16,7 @@ load_dotenv(dotenv_path)
 
 interpreter = None
 application = Flask(__name__)
+
 
 # Function to fetch news details from SQLite3 database
 def get_news_from_db(db_path, query_content):
@@ -62,7 +64,8 @@ def get_prediction(h, b):
 # Function to handle news website queries
 def newsWeb_query(query, db_path="../newsScrapper/news_articles.db"):
     query_content = query['description']
-    result = get_news_from_db(db_path, query_content)
+    expanded_content = expand_contractions(query_content)
+    result = get_news_from_db(db_path, expanded_content)
     return result
 
 @application.route('/', methods=['GET'])
@@ -74,10 +77,12 @@ def predict():
     query = request.json
     query_body = query['body']
     query_source = query['source']
+
+    expanded_query_body = expand_contractions(query_body)
     result = 'Could not verify / find the source of the query'
     
     if query_source == "newsWeb":
-        result = newsWeb_query(query_body)
+        result = newsWeb_query({'description': expanded_query_body})
     else:
         print("Error in finding source of query")
 
